@@ -45,6 +45,13 @@ class poly_list:
     def __setitem__(self,idx,item):
         self.dict[idx] = item
 
+    def __iter__(self):
+        for x in self.dict:
+            yield x
+
+    def has_key(self,x):
+        yield self.dict.has_key(x)
+
     def extend(self,item):
         self.add(item)
 
@@ -230,9 +237,39 @@ def two_inch_wafer(layer=15):
 # Clipping
 #==============================================================================
 '''Try to use boolean operations in an efficient way, this isn't very efficient'''
-#import Polygon
 
-#def convert_plg_for_gdspy:
+def plg_bool(plgsa,plgsb,operation):
+    '''take two poly_lists and perform layer-wise boolean operations.
+
+    This is not grade-A code.  It doesn't support subtracting a contained object.'''
+    if not isinstance(plgsa,poly_list) or not isinstance(plgsb,poly_list):
+        print 'both objects need to be poly lists!'
+        pass
+
+    if operation == 'int':
+        f = lambda a,b: a and b
+    elif operation == 'union':
+        f = lambda a,b: a or b
+    elif operation == 'sub':
+        f = lambda a, b: a and not b
+
+    out_plgs = poly_list()
+
+    for layer in plgsa:
+        if plgsb.has_key(layer):
+            print 'found two in the same layer'
+            print 'a:', plgsa[layer]
+            print 'b:', plgsb[layer]
+            ret = gdspy.boolean([plgsa[layer], plgsb[layer]], f)
+            print 'ret:', ret
+            ret.layers = [layer,]*len(ret.polygons)
+            ret.datatypes = [0,]*len(ret.polygons)
+            print 'ret:', ret
+            out_plgs[layer] = ret
+
+
+    return out_plgs
+
 
 
 

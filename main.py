@@ -39,10 +39,15 @@ params = {'finger_width' : 450,
 qubit_cell = gdspy.Cell('device[%d]'%device_number)
 
 
-plgs = qubits.transmon(params)
+#plgs = qubits.transmon(params)
 #plgs.add(two_inch_wafer())
-wafer_plgs = two_inch_wafer()
 
+plga = poly_list(gdspy.Rectangle((1,1),(1.9,1.9),layer=5))
+plgb = poly_list(gdspy.Rectangle((-2,-2),(2,2),layer=5))
+
+plgs = plg_bool(plga,plgb,'sub')
+
+#print `plgs
 add_plgs(qubit_cell, plgs)
 
 gdspy.LayoutViewer(pattern={'default':7})
