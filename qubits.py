@@ -18,12 +18,16 @@ transmon_ps = {'junction_type' : 'dolan',
                 'antenna_width': 250*um,
                 'dice_width':3.2*mm,
                 'dice_length':6.7*mm,
+                'final_trace_width':10000,
+                'antenna_funnel_length':10*um,
+                'edge_rounding':10*um,
+
                 'coarse_layer':1,
                 'undercut_layer':3,
                 'label_layer':14,
-                'final_trace_width':10000,
-                'antenna_funnel_length':10*um,
-                'edge_rounding':10*um
+                'floating_field_layer':6,
+
+                'just_qubit': False #useful for HFSS
                 }
 
                  #Later we'll deal with rotation angle with beziers.
@@ -31,25 +35,35 @@ def transmon(params):
 
     plgs = poly_list()
 
+    '''Update our parameter array'''
     transmon_ps.update(params)
 
-    junction_plgs, junction_length = junctions.junction(transmon_ps)
-    #plgs.extend(junction_plgs)
+    junction_plgs, junction_length,ret_ps = junctions.junction(transmon_ps)
     plgs.add(junction_plgs)
 
-    sep = transmon_ps['separation']
-    al = transmon_ps['antenna_length']
-    aw = transmon_ps['antenna_width']
-    dw = transmon_ps['dice_width']
-    dl = transmon_ps['dice_length']
-    cl = transmon_ps['coarse_layer']
-    ul = transmon_ps['undercut_layer']
-    ll = transmon_ps['label_layer']
-    tw = transmon_ps['final_trace_width']
-    afl = transmon_ps['antenna_funnel_length']
-    er = transmon_ps['edge_rounding']
+
+    sep = ret_ps['separation']
+    al = ret_ps['antenna_length']
+    aw = ret_ps['antenna_width']
+
+    tw = ret_ps['final_trace_width']
+    afl = ret_ps['antenna_funnel_length']
+    er = ret_ps['edge_rounding']
+
+    dw = ret_ps['dice_width']
+    dl = ret_ps['dice_length']
+
+    cl = ret_ps['coarse_layer']
+    ul = ret_ps['undercut_layer']
+    fl = ret_ps['fine_layer']
+    ll = ret_ps['label_layer']
+    ffl = ret_ps['floating_field_layer']
+
+    just_qubit = ret_ps['just_qubit']
+
     jl = junction_length
 
+    '''Draw the main antenna'''
     left_trace = gdspy.Rectangle((+jl/2,tw/2),(sep/2-afl/2,-tw/2),layer=cl)
     right_trace = gdspy.Rectangle((+jl/2,tw/2),(sep/2-afl/2,-tw/2),layer=cl)
     right_trace.rotate(np.pi)
@@ -81,11 +95,51 @@ def transmon(params):
     plgs.add(right_plgs)
     plgs.add(left_plgs)
 
-    if dl and dw:
-        plgs.add(gdspy.Rectangle((-dl/2,-dw/2),(dl/2,dw/2),layer=10))
+    if not just_qubit:
+        '''Dice size indicator'''
+        plgs.add(gdspy.Rectangle((-dl/2,-dw/2),(dl/2,dw/2),layer=ll))
 
-        #Delete this.
-        #plgs = poly_list(gdspy.Rectangle((-dl/2,-dw/2),(dl/2,dw/2),layer=10))
+        '''Floating field'''
+        ffs = 500*um #Size of the floating field box.
+        plgs.add(gdspy.Rectangle((-ffs/2,-ffs/2),(ffs/2,ffs/2),layer=ffl))
+
+        '''Test junctions'''
+        tj_height = 250*um
+        tj_width = 250*um
+        tj_xdim = (-tj_width/2,-tj_height/2)
+        tj_ydim = (tj_width/2,tj_height/2)
+
+        tj_bounding_box = poly_list([
+            gdspy.Rectangle(tj_xdim,tj_ydim,layer=cl),
+            gdspy.Rectangle(tj_xdim,tj_ydim,layer=fl),
+            gdspy.Rectangle(tj_xdim,tj_ydim,layer=ul),
+            gdspy.Rectangle(tj_xdim,tj_ydim,layer=ffl)
+                            ])
+
+        tj_plgs = plg_bool(plgs,tj_bounding_box,'int')
+        tj_plgs2 = copy.deepcopy(tj_plgs)
+
+        tj_x1 = -dl/2 + tj_width/2 + 100*um
+        tj_y1 = -dw/2 + tj_height/2 + 100*um
+        tj_y2 = dw/2 - tj_height/2 - 100*um
+
+        translate(tj_plgs,(tj_x1,tj_y1))
+        translate(tj_plgs2,(tj_x1,tj_y2))
+
+        plgs.add(tj_plgs)
+        plgs.add(tj_plgs2)
+
+
+        '''Litho label  (actually printed)'''
+        label_text = '%s[%s]'%(ret_ps['wafer_name'],ret_ps['device_number'])
+        size = 50*um
+        text_plgs = gdspy.Text(label_text,size=size,angle=np.pi/2,layer=cl)
+        #print 'TEXTPLGS:',text_plgs
+        #print dir(text_plgs)
+        #plgs.add(text_plgs)
+
+
+
     return plgs
 
 def rotated_transmon(params):

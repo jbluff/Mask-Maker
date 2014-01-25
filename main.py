@@ -29,25 +29,27 @@ import junctions
 
 
 device_number = 1
+wafer_name = 'XTREME'
 
 params = {'finger_width' : 450,
           'antenna_funnel_length': 20*um,
           'junction_type': 'dolan',
-          'device_number':device_number}
+          'device_number':device_number,
+          'wafer_name':wafer_name}
 
 
-qubit_cell = gdspy.Cell('device[%d]'%device_number)
+qubit_cell = gdspy.Cell('%s[%d]' % (wafer_name,device_number))
 
 
-#plgs = qubits.transmon(params)
+plgs = qubits.transmon(params)
 #plgs.add(two_inch_wafer())
 
-plga = poly_list(gdspy.Rectangle((1,1),(1.9,1.9),layer=5))
-plgb = poly_list(gdspy.Rectangle((-2,-2),(2,2),layer=5))
+#plga = poly_list(gdspy.Rectangle((1,1),(1.9,1.9),layer=5))
+#plgb = poly_list(gdspy.Rectangle((-2,-2),(2,2),layer=5))
+#
+#plgs = plg_bool(plga,plgb,'sub')
+#
+##print `plgs
 
-plgs = plg_bool(plga,plgb,'sub')
-
-#print `plgs
 add_plgs(qubit_cell, plgs)
-
 gdspy.LayoutViewer(pattern={'default':7})

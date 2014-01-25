@@ -50,7 +50,7 @@ class poly_list:
             yield x
 
     def has_key(self,x):
-        yield self.dict.has_key(x)
+        return self.dict.has_key(x)
 
     def extend(self,item):
         self.add(item)
@@ -94,14 +94,21 @@ def add_plgs(cell,plg_list):
 # Polygon transformations and operations
 #==============================================================================
 def translate(plgs,delta):
-    '''translate a plg array (dx,dy)'''
-    plgs = flatten([plgs])
-    for plg in plgs:
-        d = list(delta)
-        pts = plg.points
-        for point in pts:
-            point += d
-        plg.points = pts
+    '''translate a plg array or polylist by (dx,dy)'''
+    if isinstance(plgs,poly_list):
+        for layer in plgs.dict:
+            for plg in plgs[layer].polygons:
+                for point in plg:
+                    point += delta
+
+    else:
+        plgs = flatten([plgs])
+        for plg in plgs:
+            d = list(delta)
+            pts = plg.points
+            for point in pts:
+                point += d
+            plg.points = pts
 
 def xflip(plgs):
     '''Flip a plg array across the x axis'''
@@ -238,7 +245,7 @@ def two_inch_wafer(layer=15):
 #==============================================================================
 '''Try to use boolean operations in an efficient way, this isn't very efficient'''
 
-def plg_bool(plgsa,plgsb,operation):
+def plg_bool(plgsa,plgsb,operation,**kwargs):
     '''take two poly_lists and perform layer-wise boolean operations.
 
     This is not grade-A code.  It doesn't support subtracting a contained object.'''
@@ -257,14 +264,14 @@ def plg_bool(plgsa,plgsb,operation):
 
     for layer in plgsa:
         if plgsb.has_key(layer):
-            print 'found two in the same layer'
-            print 'a:', plgsa[layer]
-            print 'b:', plgsb[layer]
-            ret = gdspy.boolean([plgsa[layer], plgsb[layer]], f)
-            print 'ret:', ret
+#            print 'found two in the same layer'
+#            print 'a:', plgsa[layer]
+#            print 'b:', plgsb[layer]
+            ret = gdspy.boolean([plgsa[layer], plgsb[layer]], f, eps=1e-10)
+#            print 'ret:', ret
             ret.layers = [layer,]*len(ret.polygons)
             ret.datatypes = [0,]*len(ret.polygons)
-            print 'ret:', ret
+#            print 'ret:', ret
             out_plgs[layer] = ret
 
 

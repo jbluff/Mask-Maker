@@ -113,7 +113,15 @@ def junction(params):
 
 
 
-    return plgs, junction_length
+    return plgs, junction_length, dolan_ps
+    '''
+    Returning dolan_ps never overwrites things we set in qubit_ps or the original
+    parameters.  It's a way of making sure that later in the program we know
+    What the default parameters in earlier steps were.  This can be abused,
+    but it lets us use the apprpriate default parameters, rather than have to
+    move around parameters which aren't applicable, i.e. having the default
+    bridge_free parameters passed around when you're making dolan qubits.
+    '''
 
 
 
