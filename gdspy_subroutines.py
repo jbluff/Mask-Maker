@@ -320,6 +320,61 @@ def plg_bool(plgsa,plgsb,operation,**kwargs):
 
     return out_plgs
 
+def populate_wafer(dice_x, dice_y, radius = 25.4*mm - 2.0*mm):
+    '''
+    1) See how many columns can fit.
+    
+    2) For each # of columns:
+        2a) fill the column top to bottom with devices.
+        2b) go through and see which devices have (at least) one corner outside
+            the bounding circle.
+            remove these.
+            (later I want to delete a row if it only has one device)
+        2c) count the remaining devices.
+        
+    3) use the number of columns that fit the most.
+    
+    The return format is the translation indices from the center of the gds
+    to the center of the dice.  
+    '''
+    max_columns = int((2*radius)//dice_x)
+    max_rows = int((2*radius)//dice_y)
 
-
-
+    idcs = []
+    num_devs = []
+    
+    for num_cols in range(1,max_columns+1):
+        valid_idcs =[]
+        num_devices = num_cols*max_rows
+        for col in range(num_cols):
+            col -= num_cols/2.0 -0.5
+            left_x = (col -0.5)*dice_x
+            right_x = (col + 0.5)*dice_x
+            
+            for row in range(max_rows):
+                row -= max_rows/2.0 - 0.5
+                valid = True
+                bottom_y = (row - 0.5)*dice_y
+                top_y = (row + 0.5)*dice_y
+                
+                pts = [(left_x,bottom_y),
+                       (left_x,top_y),
+                        (right_x,bottom_y),
+                        (right_x,top_y)]
+                
+                for pt in pts:
+                    ext = pt[0]**2+pt[1]**2
+                    if ext > radius**2:
+                        valid = False
+                        num_devices -= 1
+                        break
+                    
+                if valid:
+                    valid_idcs.append((col,row))
+                    
+                
+        idcs.append(valid_idcs)
+        num_devs.append(num_devices)
+        
+    opt_idx = np.argmax(num_devs)
+    return idcs[opt_idx]

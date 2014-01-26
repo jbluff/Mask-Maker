@@ -31,8 +31,11 @@ import junctions
 device_number = 1
 wafer_name = 'AA15'
 
+dice_kerf = 250*um
 params = {'finger_width' : 450,
           'antenna_funnel_length': 20*um,
+          'dice_width':3.2*mm,
+          'dice_length':6.7*mm,
           'junction_type': 'dolan',
           'device_number':device_number,
           'wafer_name':wafer_name}
@@ -41,15 +44,20 @@ params = {'finger_width' : 450,
 qubit_cell = gdspy.Cell('%s[%d]' % (wafer_name,device_number))
 
 
-plgs = qubits.transmon(params)
-#plgs.add(two_inch_wafer())
+#plgs = qubits.transmon(params)
+plgs = two_inch_wafer()
 
-#plga = poly_list(gdspy.Rectangle((1,1),(1.9,1.9),layer=5))
-#plgb = poly_list(gdspy.Rectangle((-2,-2),(2,2),layer=5))
-#
-#plgs = plg_bool(plga,plgb,'sub')
-#
-##print `plgs
+idcs = populate_wafer(params['dice_length']+dice_kerf,params['dice_width']+dice_kerf)
+
+dx = params['dice_length']
+dy = params['dice_width']
+dxp = dx+dice_kerf
+dyp = dy+dice_kerf
+
+for idx in idcs:
+    plg = gdspy.Rectangle((-dx/2,-dy/2),(dx/2,dy/2))
+    translate(plg,(idx[0]*dxp,idx[1]*dyp))
+    plgs.add(plg)
 
 add_plgs(qubit_cell, plgs)
 gdspy.LayoutViewer(pattern={'default':7})
