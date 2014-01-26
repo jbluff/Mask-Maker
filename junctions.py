@@ -27,8 +27,8 @@ dolan_ps = {  'finger_width' : 400,
               'fine_coarse_overlap':200}
 
 def junction(params):
-    #plgs = poly_list([])  #Polygons to be returned
-    junction_length = 0  #Length of the returned polygon
+    plgs = poly_list()  #Polygons to be returned
+    junction_length = 0  #Length of the returned plgs (to align qubit)
 
     if params['junction_type'] == 'dolan':
         dolan_ps.update(params)
@@ -66,8 +66,7 @@ def junction(params):
         needle = gdspy.Rectangle((0,0),(-fl,nw), layer =ml)
         translate(needle,(-bw/2,-nw/2))
 
-        #plgs.extend([bridge, finger, needle])
-        plgs = poly_list([bridge, finger, needle])
+        plgs.add([bridge, finger, needle])
 
         finger_funnel = funnel(fw,itw,layer = ml,length = ifl)
         translate(finger_funnel,(bw/2+fl,0))
@@ -76,13 +75,11 @@ def junction(params):
         needle_funnel.rotate(np.pi)
         translate(needle_funnel,(-bw/2-fl,0))
 
-        #plgs.extend([finger_funnel, needle_funnel])
         plgs.add([finger_funnel, needle_funnel])
 
         inner_trace_fs = gdspy.Rectangle((bw/2+fl+ifl,-itw/2),(bw/2+fl+itl,itw/2),layer=ml)
         inner_trace_ns = gdspy.Rectangle((-(bw/2+fl+ifl),-itw/2),(-(bw/2+fl+itl),itw/2),layer=ml)
 
-        #plgs.extend([inner_trace_fs,inner_trace_ns])
         plgs.add([inner_trace_fs,inner_trace_ns])
 
         outer_funnel_fs = funnel(itw,ftw,layer = ml,length = ofl)
@@ -94,7 +91,6 @@ def junction(params):
 
         plgs.add([outer_funnel_fs, outer_funnel_ns])
 
-        #plgs.extend([outer_funnel_fs, outer_funnel_ns])
 
         #add fine_coarse overlap!!
         #fco =

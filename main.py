@@ -29,7 +29,7 @@ import junctions
 
 
 device_number = 1
-wafer_name = 'XTREME'
+wafer_name = 'AA15'
 
 params = {'finger_width' : 450,
           'antenna_funnel_length': 20*um,

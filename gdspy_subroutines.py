@@ -21,7 +21,7 @@ def flatten(l):
     '''Flatten lists of lists (arbitrary depth)'''
     out = []
     for item in l:
-        if isinstance(item, (list, tuple, np.ndarray, poly_list)):
+        if isinstance(item, (list, tuple, np.ndarray)):
             out.extend(flatten(item))
         else:
             out.append(item)
@@ -30,8 +30,11 @@ def flatten(l):
 
 class poly_list:
     '''a poly_list is a dictionary, indexed by layer, that contains a gdspy
-    polygonSet object for each layer.  However, you can adding polygons
-    or other polygon_lists doesn't require such considerations.'''
+    polygonSet object for each layer.  However, adding polygons
+    or other polygon_lists doesn't require such considerations.
+    
+    This is the polygon object of choice, and subroutines will sometimes force 
+    you into using them.'''
 
     def __init__(self,item_list=None):
         self.dict = {}
@@ -56,29 +59,27 @@ class poly_list:
         self.add(item)
 
     def add(self,items):
-        '''Adding polygons, lists of polygons, and other poly_list objects to
-        a poly_list object.'''
-        if isinstance(items,poly_list):
-            for layer in items.dict:
-
-                if self.dict.has_key(layer):
-                    self.dict[layer].polygons.extend(items[layer].polygons)
-                else:
-                    self.dict[layer] = items[layer]
-
-        else:
-            if not isinstance(items,list):
-                items = [items,]
-
-            for item in items:
+        '''Adding polygons, other poly_list objects, or lists of those items
+        to a poly_list'''
+        items = flatten([items,])
+        for item in items:
+            if isinstance(item,poly_list):
+                for layer in item.dict:
+    
+                    if self.dict.has_key(layer):
+                        self.dict[layer].polygons.extend(item[layer].polygons)
+                    else:
+                        self.dict[layer] = item[layer]
+    
+            else:
                 layer = item.layer
                 points = item.points
                 if self.dict.has_key(layer):
                     self.dict[layer].polygons.append(points)
                 else:
                     self.dict[layer] = gdspy.PolygonSet([points,],layer=layer)
-
     pass
+
 
 
 def add_plgs(cell,plg_list):
@@ -93,56 +94,77 @@ def add_plgs(cell,plg_list):
 #==============================================================================
 # Polygon transformations and operations
 #==============================================================================
+'''There are times when raw polygons are better than poly_lists, so the basic
+transformations should work on both, I think.'''
+
 def translate(plgs,delta):
     '''translate a plg array or polylist by (dx,dy)'''
-    if isinstance(plgs,poly_list):
-        for layer in plgs.dict:
-            for plg in plgs[layer].polygons:
-                for point in plg:
-                    point += delta
-
-    else:
-        plgs = flatten([plgs])
-        for plg in plgs:
-            d = list(delta)
+    plgs = flatten([plgs])
+    for plg in plgs:
+        if isinstance(plg,poly_list):
+            for layer in plg.dict:
+                for plgn in plg[layer].polygons:
+                    for point in plgn:
+                        point += delta
+        else:           
             pts = plg.points
             for point in pts:
-                point += d
+                point += delta
             plg.points = pts
 
+
 def xflip(plgs):
-    '''Flip a plg array across the x axis'''
+    '''Flip a poly_list, plg, or combination across the x axis'''
     plgs = flatten([plgs])
     for plg in plgs:
-        pts = plg.points
-        for point in pts:
-            point[1] *= -1
-        plg.points = pts
+        if isinstance(plg,poly_list):
+            for layer in plg.dict:
+                for plgn in plg[layer].polygons:
+                    for point in plgn:
+                        point[1] *= -1
+        else:           
+            pts = plg.points
+            for point in pts:
+                point[0] *= -1
+            plg.points = pts
 
 def yflip(plgs):
-    '''Flip a plg array across the y axis'''
+    '''Flip a poly_list, plg, or combination across the y axis'''
     plgs = flatten([plgs])
     for plg in plgs:
-        pts = plg.points
-        for point in pts:
-            point[0] *= -1
-        plg.points = pts
+        if isinstance(plg,poly_list):
+            for layer in plg.dict:
+                for plgn in plg[layer].polygons:
+                    for point in plgn:
+                        point[0] *= -1
+        else:           
+            pts = plg.points
+            for point in pts:
+                point[0] *= -1
+            plg.points = pts
 
-def round_to_poly():
-    layer = rnd.layers[0]
-    plgs = rnd.polygons
-    pts = plgs[0]
-    outplg = gdspy.Polygon(pts,layer=layer)
-    return outplg
 
-def round_plg(*args,**kwargs):
-    '''This is a wrapper for the gdspy.Round object, which is basically useless.'''
-    rnd =  gdspy.Round(*args,**kwargs)
-    layer = rnd.layers[0]
-    plgs = rnd.polygons
-    pts = plgs[0]
-    outplg = gdspy.Polygon(pts,layer=layer)
-    return outplg
+def bounding_box(plgs):
+    '''Find the extend of a poly_list'''
+    if not isinstance(plgs,poly_list):
+        plgs = poly_list(plgs)
+    
+    min_x = 1e10
+    max_x = -1e10
+    
+    min_y = 1e10
+    max_y = -1e10
+    
+    for layer in plgs:
+        for plg_pts in plgs[layer].polygons:
+            for pt in plg_pts:
+                if pt[0] > max_x: max_x = pt[0]
+                if pt[0] < min_x: min_x = pt[0]
+                if pt[1] > max_y: max_y = pt[1]
+                if pt[1] < min_y: min_y = pt[1]
+        
+    return (min_x,min_y),(max_x,max_y)
+
 #==============================================================================
 # Bezier code
 #==============================================================================
@@ -176,6 +198,27 @@ def bezier_curve_range(n, points):
 #==============================================================================
 # Shapes
 #==============================================================================
+
+def round_plg(*args,**kwargs):
+    '''This is a wrapper for the gdspy.Round object, which is basically useless.'''
+    rnd =  gdspy.Round(*args,**kwargs)
+    layer = rnd.layers[0]
+    plgs = rnd.polygons
+    pts = plgs[0]
+    outplg = poly_list(gdspy.Polygon(pts,layer=layer))
+    return outplg
+    
+def text_plg(*args,**kwargs):
+    '''This is a wrapper for the gdspy.Text object, which is basically useless.'''
+    txt =  gdspy.Text(*args,**kwargs)
+    layer = txt.layers[0]
+    plg_pts = txt.polygons
+    outplgs = poly_list()
+    for pts in plg_pts:
+        new_plg = gdspy.Polygon(pts,layer=layer)
+        outplgs.add(new_plg)
+    return outplgs
+    
 def funnel(start_width,end_width,layer=0, length = 500,steepness = 0.5,steps =50):
     sw = start_width
     ew = end_width
@@ -243,7 +286,7 @@ def two_inch_wafer(layer=15):
 #==============================================================================
 # Clipping
 #==============================================================================
-'''Try to use boolean operations in an efficient way, this isn't very efficient'''
+'''Try to use boolean operations in an efficient way, this isn't very fast code'''
 
 def plg_bool(plgsa,plgsb,operation,**kwargs):
     '''take two poly_lists and perform layer-wise boolean operations.

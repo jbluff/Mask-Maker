@@ -21,6 +21,7 @@ transmon_ps = {'junction_type' : 'dolan',
                 'final_trace_width':10000,
                 'antenna_funnel_length':10*um,
                 'edge_rounding':10*um,
+                'short':True,
 
                 'coarse_layer':1,
                 'undercut_layer':3,
@@ -95,6 +96,9 @@ def transmon(params):
     plgs.add(right_plgs)
     plgs.add(left_plgs)
 
+    if ret_ps['short']:
+        plgs.add(gdspy.Rectangle((-afl-sep/2,aw/2),(afl+sep/2,aw/2-2*um),layer=cl))
+        
     if not just_qubit:
         '''Dice size indicator'''
         plgs.add(gdspy.Rectangle((-dl/2,-dw/2),(dl/2,dw/2),layer=ll))
@@ -132,15 +136,25 @@ def transmon(params):
 
         '''Litho label  (actually printed)'''
         label_text = '%s[%s]'%(ret_ps['wafer_name'],ret_ps['device_number'])
-        size = 50*um
-        text_plgs = gdspy.Text(label_text,size=size,angle=np.pi/2,layer=cl)
-        #print 'TEXTPLGS:',text_plgs
-        #print dir(text_plgs)
-        #plgs.add(text_plgs)
+        size = 150*um
+        text_plgs = text_plg(label_text,size=size,angle=np.pi/2,layer=cl)
+        
+        text_bb = bounding_box(text_plgs)
+        y_center = text_bb[1][1] - text_bb[0][1]
+        
+        translate(text_plgs,(-dl/2+size+150*um,-y_center/2))
+        plgs.add(text_plgs)
 
 
+        #print y_center
+        
+        #plgs.add(gdspy.Rectangle(text_bb[0],text_bb[1]))
 
     return plgs
+
+def parallel_capacitor_transmon(params):
+    #These have a better name.
+    pass
 
 def rotated_transmon(params):
     pass
