@@ -28,6 +28,12 @@ import junctions
 wafer_name = 'AA15'
 
 dice_kerf = 250*um
+
+
+
+#=========================================================================
+# Qubit main example
+#=========================================================================
 dx = 6.7*mm
 dy = 3.2*mm
 
@@ -82,9 +88,16 @@ label_plgs = dice_marks_and_labels(location_idcs,dxp,dyp,params['coarse_layer'])
 add_plgs_to_cell(main_cell, label_plgs)
 
 
-'''Add the plassys alignment aid'''
+'''Add the plassys alignment mark'''
 pam = plassys_alignment_mark(params['coarse_layer'])
 add_plgs_to_cell(main_cell,pam)
+
+cff_plgs = coarse_floating_fields(dx,dy,params['coarse_floating_fields_layer'])
+add_plgs_to_cell(main_cell,cff_plgs)
+
+#==============================================================================
+# Resonator example
+#==============================================================================
 
 save_gds(wafer_name)
 

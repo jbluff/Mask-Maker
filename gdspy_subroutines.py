@@ -583,3 +583,47 @@ def plassys_alignment_mark(layer):
     return out_plgs
 
 
+def coarse_floating_fields(dx, dy, layer):
+    '''We want the length of the dices in each direction to be an ODD integer
+    multiple of the device length.  This means we get a nice regular pattern
+    where the center of the dice, which generally contains the qubits, is in
+    the center of a floating field.
+
+    We'll also accept divs that are close to integer numbers of nm, because we
+    won't really care about that level of rounding error.'''
+#    ws = 50*mm
+#    plgs = poly_list()
+#
+#    divs = np.arange(1,25,2)
+#    lengths = dx/divs
+#    acceptable_lengths = [x for idx,x in enumerate(lengths) if x < 700*um]
+#
+#    opt_length_x = int(np.ceil(max(acceptable_lengths)))
+#    num_divs_x = int(np.ceil(ws/opt_length_x))
+#
+#    offset_x = (num_divs_x*opt_length_x - ws)/2.0
+#
+#
+#    lengths = dy/divs
+#    acceptable_lengths = [x for idx,x in enumerate(lengths) if x < 700*um]
+#
+#    opt_length_y = int(np.ceil(max(acceptable_lengths)))
+#    num_divs_y = int(np.ceil(ws/opt_length_y))
+#
+#    offset_y = (num_divs_y*opt_length_y - ws)/2.0
+#
+#    ff_rect = gdspy.Rectangle((-opt_length_x/2,-opt_length_y/2),
+#                              (opt_length_x/2,opt_length_y/2),layer=layer)
+#
+#    column = poly_list(0)
+#    for i in range(num_divs_y):
+#        n = copy.deepcopy(ff_rect)
+#        translate(n,(0,((i-num_divs_y/2.0)*opt_length_y - offset_y)))
+#        column.add(n)
+#
+#    for j in range(num_divs_x):
+#        n = copy.deepcopy(column)
+#        translate(n,((j-num_divs_x/2.0)*opt_length_x - offset_x,0))
+#        plgs.add(n)
+
+    return poly_list()
