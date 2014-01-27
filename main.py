@@ -21,43 +21,71 @@ python files:
 """
 
 import gdspy
-
-
 from gdspy_subroutines import *
 import qubits
 import junctions
 
-
-device_number = 1
 wafer_name = 'AA15'
 
 dice_kerf = 250*um
+dx = 6.7*mm
+dy = 3.2*mm
+
+layers = {'coarse_layer':1,
+          'fine_layer':2,
+          'undercut_layer':3,
+          'label_layer':14,
+          'fine_floating_fields_layer':6,
+          'coarse_floating_fields_layer':5}
+
 params = {'finger_width' : 450,
           'antenna_funnel_length': 20*um,
-          'dice_width':3.2*mm,
-          'dice_length':6.7*mm,
+          'dice_width':dy,
+          'dice_length':dx,
           'junction_type': 'dolan',
-          'device_number':device_number,
           'wafer_name':wafer_name}
 
+params.update(layers)
+param_list = [params,]*51
 
-qubit_cell = gdspy.Cell('%s[%d]' % (wafer_name,device_number))
-
-
-#plgs = qubits.transmon(params)
+'''Draw the wafer'''
+main_cell = gdspy.Cell('%s' % (wafer_name,))
 plgs = two_inch_wafer()
+add_plgs_to_cell(main_cell, plgs)
 
-idcs = populate_wafer(params['dice_length']+dice_kerf,params['dice_width']+dice_kerf)
+'''Figure out our dice locations'''
+dxp = dx + dice_kerf
+dyp = dy + dice_kerf
+location_idcs = populate_wafer(dxp,dyp)
 
-dx = params['dice_length']
-dy = params['dice_width']
-dxp = dx+dice_kerf
-dyp = dy+dice_kerf
 
-for idx in idcs:
-    plg = gdspy.Rectangle((-dx/2,-dy/2),(dx/2,dy/2))
-    translate(plg,(idx[0]*dxp,idx[1]*dyp))
-    plgs.add(plg)
+'''Draw the qubits (dices)'''
+for device_number,params in enumerate(param_list):
+    #print '%d/%d' % (device_number, len(param_list))
+    params['device_number'] = device_number
 
-add_plgs(qubit_cell, plgs)
-gdspy.LayoutViewer(pattern={'default':7})
+    '''Draw the qubit in its own cell'''
+    qubit_cell = gdspy.Cell('%s[%d]' % (wafer_name,device_number))
+    plgs = qubits.transmon(params)
+    add_plgs_to_cell(qubit_cell, plgs)
+
+    '''Add the qubit cell to the main cell'''
+    location_idx = location_idcs[device_number]
+    cell_ref = gdspy.CellReference(qubit_cell,
+                                   origin=(location_idx[0]*dxp,
+                                           location_idx[1]*dyp))
+    add_plgs_to_cell(main_cell, cell_ref)
+
+
+'''Draw row labels, dice marks'''
+label_plgs = dice_marks_and_labels(location_idcs,dxp,dyp,params['coarse_layer'])
+add_plgs_to_cell(main_cell, label_plgs)
+
+
+'''Add the plassys alignment aid'''
+pam = plassys_alignment_mark(params['coarse_layer'])
+add_plgs_to_cell(main_cell,pam)
+
+save_gds(wafer_name)
+
+#gdspy.LayoutViewer(pattern={'default':7})
