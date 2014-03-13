@@ -28,6 +28,10 @@ transmon_ps = {'junction_type' : 'dolan',
                 'label_layer':14,
                 'fine_floating_field_layer':6,
 
+                'test_devices':True,
+                'litho_label':True,
+                'gds_label':True,
+
                 'just_qubit': False #useful for HFSS
                 }
 
@@ -41,7 +45,6 @@ def transmon(params):
 
     junction_plgs, junction_length,ret_ps = junctions.junction(transmon_ps)
     plgs.add(junction_plgs)
-
 
     sep = ret_ps['separation']
     al = ret_ps['antenna_length']
@@ -61,6 +64,9 @@ def transmon(params):
     fffl = ret_ps['fine_floating_field_layer']
 
     just_qubit = ret_ps['just_qubit']
+    td = ret_ps['test_devices']
+    lithl = ret_ps['litho_label']
+    gl = ret_ps['gds_label']
 
     jl = junction_length
 
@@ -110,60 +116,64 @@ def transmon(params):
         '''Test junctions.
         Three test junctions lets you see visual if the device is upside
         down, so I'm a fan of that configuration.'''
-        tj_height = 250*um
-        tj_width = 250*um
-        tj_xdim = (-tj_width/2,-tj_height/2)
-        tj_ydim = (tj_width/2,tj_height/2)
 
-        tj_bounding_box = poly_list([
-            gdspy.Rectangle(tj_xdim,tj_ydim,layer=cl),
-            gdspy.Rectangle(tj_xdim,tj_ydim,layer=fl),
-            gdspy.Rectangle(tj_xdim,tj_ydim,layer=ul),
-            gdspy.Rectangle(tj_xdim,tj_ydim,layer=fffl)
-                            ])
+        if td:
+            tj_height = 250*um
+            tj_width = 250*um
+            tj_xdim = (-tj_width/2,-tj_height/2)
+            tj_ydim = (tj_width/2,tj_height/2)
 
-        tj_plgs = plg_bool(plgs,tj_bounding_box,'int')
-        tj_plgs2 = copy.deepcopy(tj_plgs)
-        tj_plgs3 = copy.deepcopy(tj_plgs)
+            tj_bounding_box = poly_list([
+                gdspy.Rectangle(tj_xdim,tj_ydim,layer=cl),
+                gdspy.Rectangle(tj_xdim,tj_ydim,layer=fl),
+                gdspy.Rectangle(tj_xdim,tj_ydim,layer=ul),
+                gdspy.Rectangle(tj_xdim,tj_ydim,layer=fffl)
+                                ])
 
-        tj_x1 = -dl/2 + tj_width/2 + 100*um
-        tj_x3 = dl/2 - tj_width/2 - 100*um
-        tj_y1 = -dw/2 + tj_height/2 + 100*um
-        tj_y2 = dw/2 - tj_height/2 - 100*um
+            tj_plgs = plg_bool(plgs,tj_bounding_box,'int')
+            tj_plgs2 = copy.deepcopy(tj_plgs)
+            tj_plgs3 = copy.deepcopy(tj_plgs)
 
-        translate(tj_plgs,(tj_x1,tj_y1))
-        translate(tj_plgs2,(tj_x1,tj_y2))
-        translate(tj_plgs3,(tj_x3,tj_y2))
+            tj_x1 = -dl/2 + tj_width/2 + 100*um
+            tj_x3 = dl/2 - tj_width/2 - 100*um
+            tj_y1 = -dw/2 + tj_height/2 + 100*um
+            tj_y2 = dw/2 - tj_height/2 - 100*um
 
-        plgs.add(tj_plgs)
-        plgs.add(tj_plgs2)
-        plgs.add(tj_plgs3)
+            translate(tj_plgs,(tj_x1,tj_y1))
+            translate(tj_plgs2,(tj_x1,tj_y2))
+            translate(tj_plgs3,(tj_x3,tj_y2))
+
+            plgs.add(tj_plgs)
+            plgs.add(tj_plgs2)
+            plgs.add(tj_plgs3)
 
 
         '''Litho label  (actually printed)'''
-        label_text = '%s[%s]'%(ret_ps['wafer_name'],ret_ps['device_number'])
-        size = 150*um
-        text_plgs = text_plg(label_text,size=size,angle=np.pi/2,layer=cl)
+        if lithl:
+            label_text = '%s[%s]'%(ret_ps['wafer_name'],ret_ps['device_number'])
+            size = 150*um
+            text_plgs = text_plg(label_text,size=size,angle=np.pi/2,layer=cl)
 
-        text_bb = bounding_box(text_plgs)
-        y_center = text_bb[1][1] - text_bb[0][1]
+            text_bb = bounding_box(text_plgs)
+            y_center = text_bb[1][1] - text_bb[0][1]
 
-        translate(text_plgs,(-dl/2+size+150*um,-y_center/2))
-        plgs.add(text_plgs)
+            translate(text_plgs,(-dl/2+size+150*um,-y_center/2))
+            plgs.add(text_plgs)
 
 
         '''GDS label (not actually exposed.)
         I generally keep the finger width printed on the GDS for reference
         purposes.  Any other swept variable also makes sense.'''
-        label_text = '%dnm'%(ret_ps['finger_width'])
-        size = 250*um
-        text_plgs = text_plg(label_text,size=size,layer=ll)
+        if gl:
+            label_text = '%dnm'%(ret_ps['finger_width'])
+            size = 250*um
+            text_plgs = text_plg(label_text,size=size,layer=ll)
 
-        text_bb = bounding_box(text_plgs)
-        y_center = text_bb[1][1] - text_bb[0][1]
+            text_bb = bounding_box(text_plgs)
+            y_center = text_bb[1][1] - text_bb[0][1]
 
-        translate(text_plgs,(-dl/3.0+size,-y_center/2))
-        plgs.add(text_plgs)
+            translate(text_plgs,(-dl/3.0+size,-y_center/2))
+            plgs.add(text_plgs)
 
 
 

@@ -34,8 +34,8 @@ dice_kerf = 250*um
 #=========================================================================
 # Qubit main example
 #=========================================================================
-dx = 6.7*mm
-dy = 3.2*mm
+dx = 1.7*mm
+dy = 1.2*mm
 
 layers = {'coarse_layer':1,
           'fine_layer':2,
@@ -52,9 +52,10 @@ params = {'finger_width' : 450,
           'wafer_name':wafer_name}
 
 params.update(layers)
-param_list = [params,]*51
+param_list = [params,]*552
 
 '''Draw the wafer'''
+gdspy.Cell.cell_dict.clear()
 main_cell = gdspy.Cell('%s' % (wafer_name,))
 plgs = two_inch_wafer()
 add_plgs_to_cell(main_cell, plgs)
