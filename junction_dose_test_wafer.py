@@ -12,7 +12,7 @@ import qubits
 reload(qubits)
 import junctions
 
-wafer_name = 'blahh15r'
+wafer_name = 'test1'
 
 layers = {'coarse_layer':1,
           'fine_layer':2,
@@ -41,9 +41,9 @@ def params_width(width):
     params.update(layers)
     return params
 
-max_width = 300
+max_width = 400
 min_width = 100
-num_widths = 21
+num_widths = 31
 
 num_reps = 5
 
@@ -59,10 +59,14 @@ plgs = two_inch_wafer()
 add_plgs_to_cell(main_cell, plgs)
 
 '''Figure out our dice locations'''
-xs = np.arange(-num_widths/2,num_widths/2)+1
-location_idcs = [(x,35-y) for y in range(num_reps) for x in xs ]
+yoffset = 30
+yspacing = 1.5
 
-'''Draw the qubits (dices)'''
+xs = np.arange(-num_widths,num_widths,2)+1
+ys = yoffset-np.arange(num_reps)*yspacing
+#location_idcs = [(x,35-y*2) for y in range(num_reps) for x in xs ]
+location_idcs = [(x,y) for y in ys for x in xs ]
+'''Draw the qubits '''
 for device_number,params in enumerate(param_list):
     #print '%d/%d' % (device_number, len(param_list))
     params['device_number'] = device_number
@@ -79,11 +83,36 @@ for device_number,params in enumerate(param_list):
     cell_ref = gdspy.CellReference(qubit_cell,
                                    origin=(location_idx[0]*dx,
                                            (location_idx[1])*dy))
-
-
     add_plgs_to_cell(main_cell, cell_ref)
 
+    '''Add some labels'''
+    if location_idx[1] == max(ys):
+        lbl = text_plg('%d' % (params['finger_width'],),
+                       size=100*um,
+                       layer=layers['coarse_layer'])
+        translate(lbl,((location_idx[0]-0.3)*dx,(location_idx[1]+1)*dy))
+        add_plgs_to_cell(main_cell,lbl)
 
+    if location_idx[1] == min(ys):
+        lbl = text_plg('%d' % (params['finger_width'],),
+                       size=100*um,
+                       layer=layers['coarse_layer'])
+        translate(lbl,((location_idx[0]-0.3)*dx,(location_idx[1]-1)*dy))
+        add_plgs_to_cell(main_cell,lbl)
+
+    if location_idx[0] == min(xs):
+        lbl = text_plg('%d' % (-(location_idx[1]-yoffset)/yspacing,),
+                       size=100*um,
+                       layer=layers['coarse_layer'])
+        translate(lbl,((location_idx[0]-1)*dx,(location_idx[1])*dy))
+        add_plgs_to_cell(main_cell,lbl)
+
+    if location_idx[0] == max(xs):
+        lbl = text_plg('%d' % (-(location_idx[1]-yoffset)/yspacing,),
+                       size=100*um,
+                       layer=layers['coarse_layer'])
+        translate(lbl,((location_idx[0]+1)*dx,(location_idx[1])*dy))
+        add_plgs_to_cell(main_cell,lbl)
 
 #==============================================================================
 # Resonator example

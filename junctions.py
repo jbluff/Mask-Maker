@@ -9,18 +9,18 @@ import gdspy
 
 from gdspy_subroutines import *
 
-'''These are the fault parameters.  They'll be overwritten if the passed params
+'''These are the default parameters.  They'll be overwritten if the passed params
 dict contains entries with the same key.'''
 
 dolan_ps = {  'finger_width' : 400,
-              'bridge_width' : 500,
-              'bridge_height' : 600,
-              'needle_width' : 200,
-              'finger_length' : 10000,
+              'bridge_extra_width' : 200,
+              'bridge_length' : 460,
+              'finger_extra_width' : 200,
+              'finger_length' : 4000,
               'undercut_layer': 3,
               'fine_layer' : 2,
               'inner_trace_width': 1000,
-              'inner_trace_length':10000,
+              'inner_trace_length':9500,
               'final_trace_width':10000,
               'inner_funnel_length':500,
               'outer_funnel_length':2000,
@@ -42,9 +42,9 @@ def junction(params):
 
         fw = dolan_ps['finger_width']
         fl = dolan_ps['finger_length']
-        bw = dolan_ps['bridge_width']
-        bh = dolan_ps['bridge_height']
-        nw = dolan_ps['needle_width']
+        bew = dolan_ps['bridge_extra_width']
+        bl = dolan_ps['bridge_length']
+        few = dolan_ps['finger_extra_width']
 
         itw = dolan_ps['inner_trace_width']
         itl = dolan_ps['inner_trace_length']
@@ -58,36 +58,38 @@ def junction(params):
 
         fco = dolan_ps['fine_coarse_overlap']
 
-        bridge = gdspy.Rectangle((-bw/2, -bh/2), (bw/2, bh/2), layer=ul)
+        bridge = gdspy.Rectangle((-bl/2,-(fw+few+bew)/2),
+                                 (bl/2,(fw+few+bew)/2),
+                                 layer=ul)
 
-        finger = gdspy.Rectangle((0,0),(fl,fw), layer =ml)
-        translate(finger,(bw/2,-fw/2))
+        finger = gdspy.Rectangle((0,0),(-fl,fw), layer =ml)
+        translate(finger,(-bl/2,-fw/2))
 
-        needle = gdspy.Rectangle((0,0),(-fl,nw), layer =ml)
-        translate(needle,(-bw/2,-nw/2))
+        wider_finger = gdspy.Rectangle((0,0),(fl,fw+few), layer =ml)
+        translate(wider_finger,(bl/2,-(fw+few)/2))
 
-        plgs.add([bridge, finger, needle])
+        plgs.add([bridge, finger, wider_finger])
 
         finger_funnel = funnel(fw,itw,layer = ml,length = ifl)
-        translate(finger_funnel,(bw/2+fl,0))
+        finger_funnel.rotate(np.pi)
+        translate(finger_funnel,(-bl/2-fl,0))
 
-        needle_funnel = funnel(nw,itw,layer = ml,length = ifl)
-        needle_funnel.rotate(np.pi)
-        translate(needle_funnel,(-bw/2-fl,0))
+        wider_funnel = funnel(fw+few,itw,layer = ml,length = ifl)
+        translate(wider_funnel,(+bl/2+fl,0))
 
-        plgs.add([finger_funnel, needle_funnel])
+        plgs.add([finger_funnel, wider_funnel])
 
-        inner_trace_fs = gdspy.Rectangle((bw/2+fl+ifl,-itw/2),(bw/2+fl+itl,itw/2),layer=ml)
-        inner_trace_ns = gdspy.Rectangle((-(bw/2+fl+ifl),-itw/2),(-(bw/2+fl+itl),itw/2),layer=ml)
+        inner_trace_fs = gdspy.Rectangle((bl/2+fl+ifl,-itw/2),(bl/2+fl+itl,itw/2),layer=ml)
+        inner_trace_ns = gdspy.Rectangle((-(bl/2+fl+ifl),-itw/2),(-(bl/2+fl+itl),itw/2),layer=ml)
 
         plgs.add([inner_trace_fs,inner_trace_ns])
 
         outer_funnel_fs = funnel(itw,ftw,layer = ml,length = ofl)
-        translate(outer_funnel_fs,(bw/2+fl+itl,0))
+        translate(outer_funnel_fs,(bl/2+fl+itl,0))
 
         outer_funnel_ns = funnel(itw,ftw,layer = ml,length = ofl)
         outer_funnel_ns.rotate(np.pi)
-        translate(outer_funnel_ns,(-(bw/2+fl+itl),0))
+        translate(outer_funnel_ns,(-(bl/2+fl+itl),0))
 
         plgs.add([outer_funnel_fs, outer_funnel_ns])
 
@@ -95,7 +97,7 @@ def junction(params):
         #add fine_coarse overlap!!
         #fco =
 
-        junction_length = bw + 2*fl + 2*itl +2*ofl
+        junction_length = bl + 2*fl + 2*itl +2*ofl
 
 
     if params['junction_type'] == 'dolan_squid':
